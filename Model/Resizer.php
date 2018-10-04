@@ -26,6 +26,32 @@ class Resizer
      * constant IMAGE_RESIZER_CACHE_DIR
      */
     const IMAGE_RESIZER_CACHE_DIR = self::IMAGE_RESIZER_DIR . '/' . DirectoryList::CACHE;
+
+    /**
+     * constant POSITION_TOP
+     */
+    const POSITION_TOP     = 'top';
+
+    /**
+     * constant POSITION_LEFT
+     */
+    const POSITION_LEFT     = 'left';
+
+    /**
+     * constant POSITION_RIGHT
+     */
+    const POSITION_RIGHT     = 'right';
+
+    /**
+     * constant POSITION_BOTTOM
+     */
+    const POSITION_BOTTOM = 'bottom';
+
+    /**
+     * constant POSITION_CENTER
+     */
+    const POSITION_CENTER = 'center';
+
     /**
      * @var imageAdapterFactory
      */
@@ -63,6 +89,8 @@ class Resizer
      * - keepFrame[false]: Guarantee, that image will have dimensions, set in $width/$height. Not applicable,
      * if keepAspectRatio(false).
      * - backgroundColor[null]: Default white
+     * - crop[false]: If true the image will be cropped to the dimensions set in $width/$height. Not applicable if keepAspectRatio(false)
+     * - position[center]: Position of image crop. Not applicable if crop is false
      */
     protected $defaultSettings = [
         'constrainOnly' => true,
@@ -70,6 +98,8 @@ class Resizer
         'keepTransparency' => true,
         'keepFrame' => false,
         'backgroundColor' => null,
+        'crop' => false,
+        'position' => 'center',
         'quality' => 85
     ];
     /**
@@ -90,6 +120,30 @@ class Resizer
      * @var LoggerInterface
      */
     protected $logger;
+
+    /**
+     * Crop position from top
+     * @var float
+     */
+    protected $top = 0.5;
+
+    /**
+     * Crop position from bottom
+     * @var float
+     */
+    protected $bottom = 0.5;
+
+    /**
+     * Crop position from left
+     * @var float
+     */
+    protected $left = 1;
+
+    /**
+     * Crop position from right
+     * @var float
+     */
+    protected $right = 1;
 
     /**
      * Resizer constructor.
@@ -290,9 +344,62 @@ class Resizer
         $imageAdapter->keepTransparency($this->resizeSettings['keepTransparency']);
         $imageAdapter->keepFrame($this->resizeSettings['keepFrame']);
         $imageAdapter->backgroundColor($this->resizeSettings['backgroundColor']);
+
         $imageAdapter->quality($this->resizeSettings['quality']);
-        $imageAdapter->resize($this->width, $this->height);
+        if($this->resizeSettings['crop']){
+
+            $this->setCropPosition($this->resizeSettings['position']);
+
+            $currentRatio = $imageAdapter->getOriginalWidth() / $imageAdapter->getOriginalHeight();
+            $targetRatio = $this->width / $this->height;
+
+            if ($targetRatio > $currentRatio) {
+                $imageAdapter->resize($this->width, null);
+            } else {
+                $imageAdapter->resize(null, $this->height);
+            }
+
+            $diffWidth = $imageAdapter->getOriginalWidth() - $this->width;
+            $diffHeight = $imageAdapter->getOriginalHeight() - $this->height;
+
+            $imageAdapter->crop(
+                floor($diffHeight * $this->top),
+                floor(($diffWidth / 2) * $this->left),
+                ceil(($diffWidth / 2) * $this->right),
+                ceil($diffHeight * $this->bottom)
+            );
+        }
+        else {
+            $imageAdapter->resize($this->width, $this->height);
+        }
+
         $imageAdapter->save($this->getAbsolutePathResized());
         return true;
+    }
+
+    protected function setCropPosition($position)
+    {
+        switch($position){
+
+            case self::POSITION_TOP:
+                $this->top = 0;
+                $this->bottom = 1;
+                break;
+            case self::POSITION_BOTTOM:
+                $this->top = 1;
+                $this->bottom = 0;
+                break;
+            case self::POSITION_LEFT:
+                $this->left = 0;
+                $this->right = 2;
+                break;
+            case self::POSITION_RIGHT:
+                $this->left = 2;
+                $this->right = 0;
+                break;
+            default:
+        }
+
+        return $this;
     }
 }
