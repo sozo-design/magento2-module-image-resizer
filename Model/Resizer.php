@@ -125,25 +125,25 @@ class Resizer
      * Crop position from top
      * @var float
      */
-    protected $top = 0.5;
+    protected $top;
 
     /**
      * Crop position from bottom
      * @var float
      */
-    protected $bottom = 0.5;
+    protected $bottom;
 
     /**
      * Crop position from left
      * @var float
      */
-    protected $left = 1;
+    protected $left;
 
     /**
      * Crop position from right
      * @var float
      */
-    protected $right = 1;
+    protected $right;
 
     /**
      * Resizer constructor.
@@ -327,6 +327,48 @@ class Resizer
     }
 
     /**
+     * @param $position
+     * @return $this
+     */
+    protected function setCropPosition($position)
+    {
+        switch($position){
+
+            case self::POSITION_TOP:
+                $this->top = 0;
+                $this->bottom = 1;
+                $this->left = 1;
+                $this->right = 1;
+                break;
+            case self::POSITION_BOTTOM:
+                $this->top = 1;
+                $this->bottom = 0;
+                $this->left = 1;
+                $this->right = 1;
+                break;
+            case self::POSITION_LEFT:
+                $this->top = 0.5;
+                $this->bottom = 0.5;
+                $this->left = 0;
+                $this->right = 2;
+                break;
+            case self::POSITION_RIGHT:
+                $this->top = 0.5;
+                $this->bottom = 0.5;
+                $this->left = 2;
+                $this->right = 0;
+                break;
+            default:
+                $this->top = 0.5;
+                $this->bottom = 0.5;
+                $this->left = 1;
+                $this->right = 1;
+        }
+
+        return $this;
+    }
+
+    /**
      * Resize and save new generated image
      *
      * @return bool
@@ -346,6 +388,7 @@ class Resizer
         $imageAdapter->backgroundColor($this->resizeSettings['backgroundColor']);
 
         $imageAdapter->quality($this->resizeSettings['quality']);
+        //Adaptive Resizing
         if($this->resizeSettings['crop']){
 
             $this->setCropPosition($this->resizeSettings['position']);
@@ -375,31 +418,5 @@ class Resizer
 
         $imageAdapter->save($this->getAbsolutePathResized());
         return true;
-    }
-
-    protected function setCropPosition($position)
-    {
-        switch($position){
-
-            case self::POSITION_TOP:
-                $this->top = 0;
-                $this->bottom = 1;
-                break;
-            case self::POSITION_BOTTOM:
-                $this->top = 1;
-                $this->bottom = 0;
-                break;
-            case self::POSITION_LEFT:
-                $this->left = 0;
-                $this->right = 2;
-                break;
-            case self::POSITION_RIGHT:
-                $this->left = 2;
-                $this->right = 0;
-                break;
-            default:
-        }
-
-        return $this;
     }
 }
